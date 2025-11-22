@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 import sqlite3
+from datetime import date
 import os
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'inventory.db')
 
@@ -221,6 +222,25 @@ def reports():
     conn.close()
     return render_template('reports.html', report_data=report_data)
 
+@app.route('/sales_orders')
+def sales_orders():
+    conn = get_db_connection()
+    sales_summary = conn.execute('''
+        SELECT 
+            so.so_id,
+            c.customer_name,
+            so.order_date,
+            so.status,
+            SUM(sod.quantity_sold) AS total_items,
+            SUM(sod.quantity_sold * sod.unit_price) AS total_value
+        FROM SalesOrders so
+        JOIN Customers c ON so.customer_id = c.customer_id
+        JOIN SalesOrderDetails sod ON so.so_id = sod.so_id
+        GROUP BY so.so_id
+        ORDER BY so.so_id DESC
+    ''').fetchall()
+    conn.close()
+    return render_template('sales_orders.html', sales_summary=sales_summary)
 
 @app.route('/performance')
 def performance():
@@ -250,6 +270,85 @@ def performance():
     conn.close()
     return render_template('performance.html', performance_data=performance_data, sales_summary=sales_summary)
 
+@app.route('/sales_orders/add', methods=['GET', 'POST'])
+def add_sales_order():
+    conn = get_db_connection()
+    if request.method == 'POST':
+        customer_id = request.form['customer_id']
+        item_id = request.form['item_id']
+        quantity_sold = request.form['quantity_sold']
+        unit_price = request.form['unit_price']
+        shipping_address = request.form['shipping_address']
+
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO SalesOrders (customer_id, order_date, status, shipping_address)
+            VALUES (?, DATE('now'), 'Pending', ?)
+        """, (customer_id, shipping_address))
+        so_id = cursor.lastrowid
+
+        cursor.execute("""
+            INSERT INTO SalesOrderDetails (so_id, item_id, quantity_sold, unit_price)
+            VALUES (?, ?, ?, ?)
+        """, (so_id, item_id, quantity_sold, unit_price))
+
+        conn.commit()
+        conn.close()
+        flash("Sales order created!", "success")
+        return redirect(url_for('sales_orders'))
+
+    customers = conn.execute("SELECT * FROM Customers").fetchall()
+    items = conn.execute("SELECT * FROM Items").fetchall()
+    current_date = date.today().isoformat()
+    conn.close()
+    return render_template('add_sales_order.html', customers=customers, items=items, current_date=current_date)
+
+@app.route('/sales_orders/edit/<int:so_id>', methods=['GET', 'POST'])
+def edit_sales_order(so_id):
+    conn = get_db_connection()
+    order = conn.execute("SELECT * FROM SalesOrders WHERE so_id = ?", (so_id,)).fetchone()
+    order_details = conn.execute("SELECT * FROM SalesOrderDetails WHERE so_id = ?", (so_id,)).fetchall()
+
+    if request.method == 'POST':
+        customer_id = request.form['customer_id']
+        status = request.form['status']
+        shipping_address = request.form['shipping_address']
+        order_date = request.form['order_date']
+
+        conn.execute("""
+            UPDATE SalesOrders
+            SET customer_id=?, status=?, shipping_address=?, order_date=?, updated_at=CURRENT_TIMESTAMP
+            WHERE so_id=?
+        """, (customer_id, status, shipping_address, order_date, so_id))
+
+        for detail in order_details:
+            quantity = request.form.get(f'quantity_{detail["so_detail_id"]}')
+            unit_price = request.form.get(f'unit_price_{detail["so_detail_id"]}')
+            conn.execute("""
+                UPDATE SalesOrderDetails
+                SET quantity_sold=?, unit_price=?, updated_at=CURRENT_TIMESTAMP
+                WHERE so_detail_id=?
+            """, (quantity, unit_price, detail['so_detail_id']))
+
+        conn.commit()
+        conn.close()
+        flash("Sales order updated!", "success")
+        return redirect(url_for('sales_orders'))
+
+    customers = conn.execute("SELECT * FROM Customers").fetchall()
+    items = conn.execute("SELECT * FROM Items").fetchall()
+    conn.close()
+    return render_template('edit_sales_order.html', order=order, order_details=order_details, customers=customers, items=items)
+
+@app.route('/sales_orders/delete/<int:so_id>')
+def delete_sales_order(so_id):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM SalesOrderDetails WHERE so_id = ?", (so_id,))
+    conn.execute("DELETE FROM SalesOrders WHERE so_id = ?", (so_id,))
+    conn.commit()
+    conn.close()
+    flash("Sales order deleted successfully!", "success")
+    return redirect(url_for('sales_orders'))
 
 @app.route('/settings')
 def settings():
