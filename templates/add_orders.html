@@ -1,0 +1,41 @@
+{% extends "index.html" %}
+{% block title %}Add Item{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-start" style="min-height: 80vh;">
+  <div class="card shadow-sm p-4 mt-5" style="width: 100%; max-width: 600px; background-color: #f8f9fa;">
+   <h2>Add New Order</h2>
+    <form method="POST">
+     <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Customer ID</label>
+        <input type="text" name="name" class="form-control" required>
+     </div>
+     <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Description</label>
+        <input type="text" name="description" class="form-control">
+     </div>
+     <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Category</label>
+        <select name="category_id" class="form-select" required>
+            {% for category in categories %}
+            <option value="{{ category['category_id'] }}">{{ category['category_name'] }}</option>
+            {% endfor %}
+        </select>
+     </div>
+     <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Customer</label>
+        <select name="supplier_id" class="form-select" required>
+            {% for supplier in suppliers %}
+            <option value="{{ supplier['supplier_id'] }}">{{ supplier['supplier_name'] }}</option>
+            {% endfor %}
+        </select>
+     </div>
+     <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Unit Price</label>
+        <input type="number" step="0.01" name="unit_price" class="form-control" required>
+     </div>
+    <button class="btn btn-primary">Add Item</button>
+   </form>
+  </div>
+</div>
+{% endblock %}
