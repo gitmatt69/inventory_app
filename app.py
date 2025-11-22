@@ -4,7 +4,7 @@ import os
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'inventory.db')
 
 app = Flask(__name__)
-app.secret_key = 'Campuskeysouth01!'
+app.secret_key = 'GitHubActionsSecretKey'
 
 
 def get_db_connection():
@@ -12,7 +12,7 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-@app.route('/')
+@app.route('/login')
 def login():
     return render_template('login.html')
 
@@ -20,7 +20,7 @@ def login():
 def register():
     return render_template('register.html')
 
-@app.route('/index')
+@app.route('/')
 def index():
     return render_template('index.html')
 
