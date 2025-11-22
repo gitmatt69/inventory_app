@@ -350,6 +350,65 @@ def delete_supplier(supplier_id):
     flash('Supplier deleted successfully!', 'success')
     return redirect(url_for('suppliers'))
 
+@app.route('/users/add', methods=['GET', 'POST'])
+def add_user():
+    if request.method == 'POST':
+        username = request.form['username']
+        password_hash = request.form['password']
+        role = request.form['role']
+        email = request.form['email']
+
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT INTO Users (username, password_hash, role, email)
+            VALUES (?, ?, ?, ?)
+        ''', (username, password_hash, role, email))
+        conn.commit()
+        conn.close()
+
+        flash('User added successfully!', 'success')
+        return redirect(url_for('settings'))
+
+    return render_template('add_user.html')
+
+@app.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
+def edit_user(user_id):
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM Users WHERE user_id = ?', (user_id,)).fetchone()
+
+    if not user:
+        conn.close()
+        flash('User not found.', 'danger')
+        return redirect(url_for('settings'))
+
+    if request.method == 'POST':
+        username = request.form['username']
+        role = request.form['role']
+        email = request.form['email']
+
+        conn.execute('''
+            UPDATE Users
+            SET username=?, role=?, email=?, updated_at=CURRENT_TIMESTAMP
+            WHERE user_id=?
+        ''', (username, role, email, user_id))
+        conn.commit()
+        conn.close()
+
+        flash('User updated successfully!', 'success')
+        return redirect(url_for('settings'))
+
+    conn.close()
+    return render_template('edit_user.html', user=user)
+
+@app.route('/users/delete/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM Users WHERE user_id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+    flash('User deleted successfully!', 'success')
+    return redirect(url_for('settings'))
+
 if __name__ == '__main__':
     app.run(debug=True)
     
