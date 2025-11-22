@@ -13,7 +13,7 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-@app.route('/login')
+@app.route('/')
 def login():
     return render_template('login.html')
 
@@ -21,7 +21,7 @@ def login():
 def register():
     return render_template('register.html')
 
-@app.route('/')
+@app.route('/index')
 def index():
     return render_template('index.html')
 
