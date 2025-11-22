@@ -1,0 +1,73 @@
+{% extends "index.html" %}
+{% block title %}Edit Purchase Order{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-start" style="min-height: 80vh;">
+  <div class="card shadow-sm p-4 mt-5" style="width: 100%; max-width: 700px; background-color: #f8f9fa;">
+   <h2>Edit Purchase Order #{{ order['po_id'] }}</h2>
+
+   <form method="POST">
+
+    
+    <div class="mb-3">
+      <label class="form-label" style="color: #0d6efd;">Supplier</label>
+      <select name="supplier_id" class="form-select" required>
+        {% for supplier in suppliers %}
+          <option value="{{ supplier['supplier_id'] }}"
+            {% if supplier['supplier_id'] == order['supplier_id'] %}selected{% endif %}>
+            {{ supplier['supplier_name'] }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    
+    <div class="mb-3">
+      <label class="form-label" style="color: #0d6efd;">Order Date</label>
+      <input type="date" name="order_date" class="form-control" value="{{ order['order_date'] }}" required>
+    </div>
+
+    
+    <div class="mb-3">
+      <label class="form-label" style="color: #0d6efd;">Expected Delivery</label>
+      <input type="date" name="expected_delivery_date" class="form-control" value="{{ order['expected_delivery_date'] }}">
+    </div>
+
+    
+    <div class="mb-3">
+      <label class="form-label" style="color: #0d6efd;">Status</label>
+      <select name="status" class="form-select" required>
+        {% for s in ['Pending','Shipped','Delivered','Cancelled','Received'] %}
+          <option value="{{ s }}" {% if s == order['status'] %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <hr>
+
+    
+    {% for detail in order_details %}
+      <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Item</label>
+        <input type="text" class="form-control" value="{{ detail['item_id'] }}" disabled>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Quantity</label>
+        <input type="number" name="quantity_{{ detail['po_detail_id'] }}" class="form-control" value="{{ detail['quantity_ordered'] }}" min="1" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Unit Cost</label>
+        <input type="number" step="0.01" name="unit_cost_{{ detail['po_detail_id'] }}" class="form-control" value="{{ detail['unit_cost'] }}" required>
+      </div>
+
+      <hr>
+    {% endfor %}
+
+    <button class="btn btn-primary">Update Purchase Order</button>
+   </form>
+
+  </div>
+</div>
+{% endblock %}

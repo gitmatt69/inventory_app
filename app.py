@@ -109,6 +109,70 @@ def add_order():
 
     return render_template("add_order.html", suppliers=suppliers, items=items)
 
+@app.route('/orders/edit/<int:po_id>', methods=['GET', 'POST'])
+def edit_order(po_id):
+    conn = get_db_connection()
+    
+    
+    order = conn.execute(
+        "SELECT * FROM PurchaseOrders WHERE po_id = ?", (po_id,)
+    ).fetchone()
+    
+    
+    order_details = conn.execute(
+        "SELECT * FROM PurchaseOrderDetails WHERE po_id = ?", (po_id,)
+    ).fetchall()
+    
+    if request.method == 'POST':
+        supplier_id = int(request.form['supplier_id'])
+        order_date = request.form['order_date']
+        expected_delivery_date = request.form['expected_delivery_date']
+        status = request.form['status']
+
+       
+        conn.execute("""
+            UPDATE PurchaseOrders
+            SET supplier_id = ?, order_date = ?, expected_delivery_date = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE po_id = ?
+        """, (supplier_id, order_date, expected_delivery_date, status, po_id))
+
+        
+        for detail in order_details:
+            quantity = int(request.form.get(f'quantity_{detail["po_detail_id"]}'))
+            unit_cost = float(request.form.get(f'unit_cost_{detail["po_detail_id"]}'))
+            conn.execute("""
+                UPDATE PurchaseOrderDetails
+                SET quantity_ordered = ?, unit_cost = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE po_detail_id = ?
+            """, (quantity, unit_cost, detail["po_detail_id"]))
+
+        conn.commit()
+        conn.close()
+
+        flash("Purchase order updated!", "success")
+        return redirect(url_for("orders"))
+
+    suppliers = conn.execute("SELECT * FROM Suppliers").fetchall()
+    items = conn.execute("SELECT * FROM Items").fetchall()
+    conn.close()
+
+    return render_template("edit_order.html", order=order, order_details=order_details, suppliers=suppliers, items=items)
+
+@app.route('/orders/delete/<int:po_id>')
+def delete_order(po_id):
+    conn = get_db_connection()
+    
+    # Delete line items first (foreign key dependency)
+    conn.execute("DELETE FROM PurchaseOrderDetails WHERE po_id = ?", (po_id,))
+    
+    # Delete order header
+    conn.execute("DELETE FROM PurchaseOrders WHERE po_id = ?", (po_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    flash("Purchase order deleted successfully!", "success")
+    return redirect(url_for('orders'))
 
 @app.route('/reports')
 def reports():

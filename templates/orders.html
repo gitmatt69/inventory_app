@@ -27,6 +27,7 @@
       <th>Date</th>
       <th>Status</th>
       <th>Expected Delivery</th>
+      <th>Actions</th>
     </tr>
   </thead>
   <tbody>
@@ -39,6 +40,14 @@
             <td>{{ order['order_date'] }}</td>
             <td><span class="badge {{ status_colors[order['status']] }}">{{ order['status'] }}</span></td>
             <td>{{ order['expected_delivery_date'] }}</td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="/orders/edit/{{ order['po_id'] }}" class="btn btn-sm btn-primary me-1">
+                  <i class="bi bi-pencil-square"></i></a>
+                <a href="/orders/delete/{{ order['po_id'] }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
+                  <i class="bi bi-trash"></i></a>
+              </div>
+            </td>
         </tr>
     {% endfor %}
   </tbody>
