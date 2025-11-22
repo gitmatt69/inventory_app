@@ -1,0 +1,52 @@
+{% extends "index.html" %}
+{% block title %}Add Sales Order{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-start" style="min-height: 80vh;">
+  <div class="card shadow-sm p-4 mt-5" style="width: 100%; max-width: 600px; background-color: #f8f9fa;">
+    <h2>Add New Sales Order</h2>
+    <form method="POST">
+
+      <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Customer</label>
+        <select name="customer_id" class="form-select" required>
+          {% for customer in customers %}
+          <option value="{{ customer['customer_id'] }}">{{ customer['customer_name'] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Order Date</label>
+        <input type="date" name="order_date" class="form-control" value="{{ current_date }}" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Product</label>
+        <select name="item_id" class="form-select" required>
+          {% for item in items %}
+          <option value="{{ item['item_id'] }}">{{ item['item_name'] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Quantity</label>
+        <input type="number" name="quantity_sold" class="form-control" min="1" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Unit Price</label>
+        <input type="number" step="0.01" name="unit_price" class="form-control" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="color: #0d6efd;">Shipping Address</label>
+        <input type="text" name="shipping_address" class="form-control" required>
+      </div>
+
+      <button class="btn btn-primary">Create Sales Order</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
