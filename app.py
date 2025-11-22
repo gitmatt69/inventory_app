@@ -205,7 +205,7 @@ def add_supplier():
         conn.close()
 
         flash('New supplier added successfully!', 'success')
-        return redirect(url_for('suppliers'))  # <-- Change if your supplier page uses a different route name
+        return redirect(url_for('suppliers'))
 
     conn.close()
     return render_template('add_supplier.html')
