@@ -223,5 +223,30 @@ def delete_item(item_id):
     flash('Item deleted successfully!', 'success')
     return redirect(url_for('inventory'))
 
+@app.route('/suppliers/add', methods=['GET', 'POST'])
+def add_supplier():
+    conn = get_db_connection()
+
+    if request.method == 'POST':
+        supplier_name = request.form['supplier_name']
+        contact_person = request.form['contact_person']
+        phone = request.form['phone']
+        email = request.form['email']
+
+        conn.execute('''
+            INSERT INTO Suppliers (supplier_name, contact_person, phone, email)
+            VALUES (?, ?, ?, ?)
+        ''', (supplier_name, contact_person, phone, email))
+
+        conn.commit()
+        conn.close()
+
+        flash('New supplier added successfully!', 'success')
+        return redirect(url_for('suppliers'))
+
+    conn.close()
+    return render_template('add_supplier.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
+    
