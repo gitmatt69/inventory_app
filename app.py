@@ -72,6 +72,43 @@ def orders():
     conn.close()
     return render_template('orders.html', orders=orders_list)
 
+@app.route('/orders/add', methods=['GET', 'POST'])
+def add_order():
+    conn = get_db_connection()
+
+    if request.method == 'POST':
+        supplier_id = int(request.form['supplier_id'])
+        item_id = int(request.form['item_id'])
+        quantity_ordered = int(request.form['quantity'])
+        unit_cost = float(request.form['unit_cost'])
+        expected_delivery_date = request.form['order_date']
+
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO PurchaseOrders (supplier_id, order_date, status, expected_delivery_date)
+            VALUES (?, DATE('now'), 'Pending', ?)
+        """, (supplier_id, expected_delivery_date))
+
+        po_id = cursor.lastrowid
+
+        cursor.execute("""
+            INSERT INTO PurchaseOrderDetails (po_id, item_id, quantity_ordered)
+            VALUES (?, ?, ?)
+        """, (po_id, item_id, quantity_ordered))
+
+        conn.commit()
+        conn.close()
+
+        flash("Purchase order created!", "success")
+        return redirect(url_for("orders"))
+
+    suppliers = conn.execute("SELECT * FROM Suppliers").fetchall()
+    items = conn.execute("SELECT * FROM Items").fetchall()
+    conn.close()
+
+    return render_template("add_order.html", suppliers=suppliers, items=items)
+
 
 @app.route('/reports')
 def reports():
