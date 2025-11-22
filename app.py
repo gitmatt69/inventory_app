@@ -210,6 +210,45 @@ def add_supplier():
     conn.close()
     return render_template('add_supplier.html')
 
+@app.route('/suppliers/edit/<int:supplier_id>', methods=['GET', 'POST'])
+def edit_supplier(supplier_id):
+    conn = get_db_connection()
+    supplier = conn.execute('SELECT * FROM Suppliers WHERE supplier_id = ?', (supplier_id,)).fetchone()
+
+    if not supplier:
+        conn.close()
+        flash('Supplier not found.', 'danger')
+        return redirect(url_for('suppliers'))
+
+    if request.method == 'POST':
+        supplier_name = request.form['supplier_name']
+        contact_person = request.form['contact_person']
+        phone = request.form['phone']
+        email = request.form['email']
+
+        conn.execute('''
+            UPDATE Suppliers
+            SET supplier_name=?, contact_person=?, phone=?, email=?, updated_at=CURRENT_TIMESTAMP
+            WHERE supplier_id=?
+        ''', (supplier_name, contact_person, phone, email, supplier_id))
+
+        conn.commit()
+        conn.close()
+        flash('Supplier updated successfully!', 'success')
+        return redirect(url_for('suppliers'))
+
+    conn.close()
+    return render_template('edit_supplier.html', supplier=supplier)
+
+@app.route('/suppliers/delete/<int:supplier_id>', methods=['POST'])
+def delete_supplier(supplier_id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM Suppliers WHERE supplier_id = ?', (supplier_id,))
+    conn.commit()
+    conn.close()
+    flash('Supplier deleted successfully!', 'success')
+    return redirect(url_for('suppliers'))
+
 if __name__ == '__main__':
     app.run(debug=True)
     
