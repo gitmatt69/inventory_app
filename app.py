@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 import sqlite3
 from datetime import date
 import os
@@ -13,16 +13,62 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def login():
-    return render_template('login.html')
+    error = None
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
 
-@app.route('/register')
+        conn = get_db_connection()
+        user = conn.execute('SELECT * FROM Users WHERE username = ? AND password_hash = ?', 
+                            (username, password)).fetchone()
+        conn.close()
+
+        if user:
+            session['user_id'] = user['user_id']
+            session['username'] = user['username']
+            return redirect(url_for('index'))
+        else:
+            error = "Incorrect username or password"
+
+    return render_template('login.html', error=error)
+
+@app.route('/register', methods=['GET', 'POST'])
 def register():
-    return render_template('register.html')
+    error = None
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        role = request.form['role']
+        password = request.form['password']
+
+        conn = get_db_connection()
+
+        existing_user = conn.execute(
+            'SELECT * FROM Users WHERE username = ?', (username,)
+        ).fetchone()
+
+        if existing_user:
+            error = "Username already exists"
+        else:
+            conn.execute(
+                'INSERT INTO Users (username, password_hash, role, email) VALUES (?, ?, ?, ?)',
+                (username, password, role, email)
+            )
+            conn.commit()
+            conn.close()
+            return redirect(url_for('index'))
+
+        conn.close()
+
+    return render_template('register.html', error=error)
 
 @app.route('/index')
 def index():
+    if 'user_id' not in session:
+        flash("Please log in first.", "warning")
+        return redirect(url_for('login'))
     return render_template('index.html')
 
 @app.route('/suppliers')
@@ -265,7 +311,7 @@ def performance():
         JOIN Customers c ON so.customer_id = c.customer_id
         JOIN SalesOrderDetails sod ON so.so_id = sod.so_id
         GROUP BY so.so_id
-        ORDER BY so.so_id DESC
+        ORDER BY so.so_id
     ''').fetchall()
     conn.close()
     return render_template('performance.html', performance_data=performance_data, sales_summary=sales_summary)
@@ -295,7 +341,7 @@ def add_sales_order():
         conn.commit()
         conn.close()
         flash("Sales order created!", "success")
-        return redirect(url_for('sales_orders'))
+        return redirect(url_for('performance'))
 
     customers = conn.execute("SELECT * FROM Customers").fetchall()
     items = conn.execute("SELECT * FROM Items").fetchall()
@@ -333,7 +379,7 @@ def edit_sales_order(so_id):
         conn.commit()
         conn.close()
         flash("Sales order updated!", "success")
-        return redirect(url_for('sales_orders'))
+        return redirect(url_for('performance'))
 
     customers = conn.execute("SELECT * FROM Customers").fetchall()
     items = conn.execute("SELECT * FROM Items").fetchall()
@@ -348,7 +394,7 @@ def delete_sales_order(so_id):
     conn.commit()
     conn.close()
     flash("Sales order deleted successfully!", "success")
-    return redirect(url_for('sales_orders'))
+    return redirect(url_for('performance'))
 
 @app.route('/settings')
 def settings():
