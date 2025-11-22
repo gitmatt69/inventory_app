@@ -31,10 +31,15 @@ def suppliers():
     conn.close()
     return render_template('suppliers.html', suppliers=suppliers)
 
-@app.route('/inventory')
+@app.route('/inventory', methods=['GET'])
 def inventory():
+    search_query = request.args.get('search', '').strip()
+    category_filter = request.args.get('category', '').strip()
+    stock_filter = request.args.get('stock', '').strip()
+
     conn = get_db_connection()
-    items = conn.execute('''
+
+    query = '''
         SELECT Items.item_id, Items.item_name, Items.description,
                Categories.category_name, Suppliers.supplier_name,
                Items.unit_price, Items.reorder_level,
@@ -43,9 +48,38 @@ def inventory():
         LEFT JOIN Categories ON Items.category_id = Categories.category_id
         LEFT JOIN Suppliers ON Items.supplier_id = Suppliers.supplier_id
         LEFT JOIN Stock ON Items.item_id = Stock.item_id
+    '''
+    conditions = []
+    params = []
+
+    if search_query:
+        conditions.append("(Items.item_name LIKE ? OR Items.description LIKE ?)")
+        params.extend([f"%{search_query}%", f"%{search_query}%"])
+
+    if category_filter:
+        conditions.append("Categories.category_name = ?")
+        params.append(category_filter)
+
+    query += " WHERE " + " AND ".join(conditions) if conditions else ""
+    query += '''
         GROUP BY Items.item_id
         ORDER BY Items.item_id
-    ''').fetchall()
+    '''
+    items = conn.execute(query, params).fetchall()
+
+    if stock_filter:
+        filtered_items = []
+        for item in items:
+            total_stock = item['total_stock']
+            reorder_level = item['reorder_level']
+            if stock_filter == 'in-stock' and total_stock > reorder_level:
+                filtered_items.append(item)
+            elif stock_filter == 'low-stock' and 0 < total_stock <= reorder_level:
+                filtered_items.append(item)
+            elif stock_filter == 'out-of-stock' and total_stock == 0:
+                filtered_items.append(item)
+        items = filtered_items
+
     conn.close()
     return render_template('inventory.html', items=items)
 
