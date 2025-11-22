@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 import sqlite3
 import os
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'inventory.db')
-
+#Test comment commit
 app = Flask(__name__)
 app.secret_key = 'GitHubActionsSecretKey'
 
